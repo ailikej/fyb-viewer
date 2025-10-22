@@ -75,10 +75,3 @@
 @media (max-width: 900px) {
   .bottom-bar .hint { display: none; } /* keep bar uncluttered on small screens */
 }
-.counter {
-  font-size: 14px;
-  color: #444;
-}
-.counter strong {
-  font-weight: 700;
-}
