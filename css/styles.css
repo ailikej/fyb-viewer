@@ -1,0 +1,84 @@
+* { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+
+    /* 3-column grid: 1 : 1 : 2 */
+    .layout {
+      position: relative;               /* so the bottom bar can be absolutely placed inside */
+      display: grid;
+      grid-template-columns: 1fr 1fr 2fr;
+      grid-template-rows: 100vh;
+      height: 100vh;
+    }
+    aside { padding: 12px; border-right: 1px solid #eee; overflow: auto; }
+    .pane-center { padding: 12px; overflow: auto; border-right: 1px solid #eee; }
+    .pane-right  { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+
+    h1 { font-size: 18px; margin: 8px 0 12px; }
+    .search { width: 100%; padding: 8px 10px; margin-bottom: 8px; }
+    ol { list-style: decimal; padding-left: 20px; margin: 0; }
+    li { margin: 6px 0; }
+    a.item { text-decoration: none; color: #0366d6; }
+    a.item.active { font-weight: 700; }
+    .meta { color: #666; font-size: 12px; }
+
+    .preview-img {
+      max-width: 100%;
+      max-height: calc(100vh - 60px);
+      display: block;
+      border: 1px solid #eee;
+      border-radius: 6px;
+    }
+
+    .controls { display:flex; gap:8px; align-items:center; padding: 8px 12px; border-bottom: 1px solid #eee; }
+    iframe { flex: 1 1 auto; width: 100%; border: 0; }
+    .warn { color: #a15; font-size: 12px; }
+
+    /* Bottom nav bar that overlaps the center + right columns */
+    .bottom-bar {
+      position: absolute;
+      /* left column is 1fr of 1fr+1fr+2fr = 4fr → 25% */
+      left: 25%;            /* start at the left edge of the center pane */
+      width: 75%;           /* span center (25%) + right (50%) = 75% */
+      bottom: 0;
+      height: 120px;
+      display: flex;
+      flex-direction: column;      /* ⬅️ stack tip above buttons */
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255,255,255,0.92);
+      border-top: 1px solid #eee;
+      backdrop-filter: blur(4px);
+      z-index: 10;          /* sit above the iframe/image */
+      padding: 8px 12px;
+    }
+    .bottom-bar .spacer { flex: 1 1 auto; }
+    .bottom-bar button {
+      appearance: none;
+      border: 1px solid #ddd;
+      background: #f7f7f7;
+      padding: 18px 22px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 24px;
+      margin:0 12px;
+    }
+    .bottom-bar button:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+    .bottom-bar .hint {
+  font-size: 14px;
+  color: #777;
+  line-height: 1.2;
+}
+@media (max-width: 900px) {
+  .bottom-bar .hint { display: none; } /* keep bar uncluttered on small screens */
+}
+.counter {
+  font-size: 14px;
+  color: #444;
+}
+.counter strong {
+  font-weight: 700;
+}

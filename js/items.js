@@ -1,4 +1,4 @@
-window.ITEMS = [
+export const ITEMS = [
   { num: 1, id: "9yiueicne5", title: "Anticipation - Anticipation Formula" },
   { num: 2, id: "700xaqeulb", title: "Anticipation - Deuce Sword Backward" },
   { num: 3, id: "esm87vxpbi", title: "Anticipation - Deuce Sword Forward" },
