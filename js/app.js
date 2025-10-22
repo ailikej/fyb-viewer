@@ -95,22 +95,6 @@ function filterList(q) {
   }
 }
 
-function updateViewCount() {
-  const el = document.getElementById("viewCounter");
-  el.textContent = "Loading views…";
-
-  // New working public counter API
-  fetch("https://countapi.dev/track/fyb-viewer/site", { cache: "no-store" })
-    .then((r) => r.json())
-    .then((data) => {
-      el.innerHTML = `Total views: <strong>${data.value.toLocaleString()}</strong>`;
-    })
-    .catch((err) => {
-      console.error("View counter failed:", err);
-      el.textContent = "Total views: (unavailable)";
-    });
-}
-
 function boot() {
   if (!ITEMS.length) {
     status.textContent = "No items found.";
@@ -123,7 +107,6 @@ function boot() {
     ? location.hash.slice(1)
     : saved || visibleItems[0]?.id;
   if (initial) select(initial);
-  updateViewCount();
 }
 
 prevBtn.addEventListener("click", () => navigate(-1));
