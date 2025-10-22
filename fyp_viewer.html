@@ -1,0 +1,337 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>FYB Links Viewer (with Titles)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+
+    /* 3-column grid: 1 : 1 : 2 */
+    .layout {
+      position: relative;               /* so the bottom bar can be absolutely placed inside */
+      display: grid;
+      grid-template-columns: 1fr 1fr 2fr;
+      grid-template-rows: 100vh;
+      height: 100vh;
+    }
+    aside { padding: 12px; border-right: 1px solid #eee; overflow: auto; }
+    .pane-center { padding: 12px; overflow: auto; border-right: 1px solid #eee; }
+    .pane-right  { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+
+    h1 { font-size: 18px; margin: 8px 0 12px; }
+    .search { width: 100%; padding: 8px 10px; margin-bottom: 8px; }
+    ol { list-style: decimal; padding-left: 20px; margin: 0; }
+    li { margin: 6px 0; }
+    a.item { text-decoration: none; color: #0366d6; }
+    a.item.active { font-weight: 700; }
+    .meta { color: #666; font-size: 12px; }
+
+    .preview-img {
+      max-width: 100%;
+      max-height: calc(100vh - 60px);
+      display: block;
+      border: 1px solid #eee;
+      border-radius: 6px;
+    }
+
+    .controls { display:flex; gap:8px; align-items:center; padding: 8px 12px; border-bottom: 1px solid #eee; }
+    iframe { flex: 1 1 auto; width: 100%; border: 0; }
+    .warn { color: #a15; font-size: 12px; }
+
+    /* Bottom nav bar that overlaps the center + right columns */
+    .bottom-bar {
+      position: absolute;
+      /* left column is 1fr of 1fr+1fr+2fr = 4fr → 25% */
+      left: 25%;            /* start at the left edge of the center pane */
+      width: 75%;           /* span center (25%) + right (50%) = 75% */
+      bottom: 0;
+      height: 120px;
+      display: flex;
+      flex-direction: column;      /* ⬅️ stack tip above buttons */
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255,255,255,0.92);
+      border-top: 1px solid #eee;
+      backdrop-filter: blur(4px);
+      z-index: 10;          /* sit above the iframe/image */
+      padding: 8px 12px;
+    }
+    .bottom-bar .spacer { flex: 1 1 auto; }
+    .bottom-bar button {
+      appearance: none;
+      border: 1px solid #ddd;
+      background: #f7f7f7;
+      padding: 18px 22px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 24px;
+      margin:0 12px;
+    }
+    .bottom-bar button:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+    .bottom-bar .hint {
+  font-size: 14px;
+  color: #777;
+  line-height: 1.2;
+}
+@media (max-width: 900px) {
+  .bottom-bar .hint { display: none; } /* keep bar uncluttered on small screens */
+}
+  </style>
+</head>
+<body>
+<div class="layout">
+  <!-- LEFT: list -->
+  <aside>
+    <h1>FYB Doubles Lessons</h1>
+    <input class="search" placeholder="Search titles / IDs…" oninput="filterList(this.value)" />
+    <ol id="list"></ol>
+  </aside>
+
+  <!-- CENTER: image preview -->
+  <section class="pane-center">
+    <img id="preview" class="preview-img" alt="Preview" style="display:none;" />
+    <div id="imgStatus" class="meta"></div>
+  </section>
+
+  <!-- RIGHT: player -->
+  <section class="pane-right">
+    <div class="controls">
+      <button id="openNew">Open on FYB</button>
+      <span id="status" class="warn"></span>
+    </div>
+    <iframe id="player" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+  </section>
+
+  <!-- ABSOLUTE bottom bar spanning center+right -->
+<div class="bottom-bar" aria-label="lesson navigation">
+  <div class="hint" title="Use these buttons below — not the orange ones in the FYB page.">
+    Tip: use these buttons to navigate. Ignore the orange controls in the right pane.
+  </div>
+  <div class="buttons">
+    <button id="prevBtn">« Previous Page</button>
+    <button id="nextBtn">Next Page »</button>
+  </div>
+</div>
+</div>
+
+<script>
+const ITEMS = [
+  /* paste your ITEMS array here exactly as in your message */
+  {"num":1,"id":"9yiueicne5","title":"Anticipation - Anticipation Formula"},
+  {"num":2,"id":"700xaqeulb","title":"Anticipation - Deuce Sword Backward"},
+  {"num":3,"id":"esm87vxpbi","title":"Anticipation - Deuce Sword Forward"},
+  {"num":4,"id":"p2g5qm4jdo","title":"Anticipation - Deuce Sword Left"},
+  {"num":5,"id":"2g71r6qoin","title":"Anticipation - Deuce Sword Right"},
+  {"num":6,"id":"ghyhn42a76","title":"Anticipation - Deuce Shield Backward"},
+  {"num":7,"id":"89g7xuzbuh","title":"Anticipation - Deuce Shield Forward"},
+  {"num":8,"id":"9ixdgjdjl0","title":"Anticipation - Deuce Shield Left"},
+  {"num":9,"id":"ildpyzxkri","title":"Anticipation - Deuce Shield Right"},
+  {"num":10,"id":"hvyp3c3t3j","title":"Anticipation - Ad Sword Backward"},
+  {"num":11,"id":"x3by12yxxt","title":"Anticipation - Ad Sword Forward"},
+  {"num":12,"id":"rjuitft98p","title":"Anticipation - Ad Sword Left"},
+  {"num":13,"id":"z2enrztces","title":"Anticipation - Ad Sword Right"},
+  {"num":14,"id":"tzhapyyeaa","title":"Anticipation - Ad Shield Backward"},
+  {"num":15,"id":"ziz9frqfkd","title":"Anticipation - Ad Shield Forward"},
+  {"num":16,"id":"zvi4hvdwyl","title":"Anticipation - Ad Shield Left"},
+  {"num":17,"id":"yw45efxffl","title":"Anticipation - Ad Shield Right"},
+  {"num":18,"id":"y2r0lqj843","title":"Net Moves - The Pinch"},
+  {"num":19,"id":"6vx4f6v1tg","title":"Net Moves - The Poach"},
+  {"num":20,"id":"m699rz6fwa","title":"Net Moves - The Fake"},
+  {"num":21,"id":"nbzhcv80qe","title":"Net Moves - Covering The Alley"},
+  {"num":22,"id":"yv7198dyjd","title":"Net Moves - Covering The Lob"},
+  {"num":23,"id":"g513yfpebu","title":"Net Moves - Stay"},
+  {"num":24,"id":"2unfroymi2","title":"Net Moves - The Reload"},
+  {"num":25,"id":"3a55kj7e57","title":"Formations - 3 Formations"},
+  {"num":26,"id":"ai06u0puaf","title":"Formations - 1-Up-1-Back (Deuce)"},
+  {"num":27,"id":"yall8xmann","title":"Formations - 1-Up-1-Back (Ad)"},
+  {"num":28,"id":"x3okr4kt5s","title":"Formations - 1-Up-1-Back Vs 2-Up (Deuce)"},
+  {"num":29,"id":"w9jmelhvmg","title":"Formations - 1-Up-1-Back Vs 2-Up (Ad)"},
+  {"num":30,"id":"0r82uyik52","title":"Formations - The Stagger (Deuce)"},
+  {"num":31,"id":"sfioy0uyuk","title":"Formations - The Stagger (Ad)"},
+  {"num":32,"id":"okvt149nda","title":"Passing Shots - Thread The Needle"},
+  {"num":33,"id":"0fzu5bdepy","title":"Passing Shots - The Hulk Smash"},
+  {"num":34,"id":"9abcc9le08","title":"Passing Shots - The Big Dipper"},
+  {"num":35,"id":"e80t5kohna","title":"Passing Shots - The Preacher"},
+  {"num":36,"id":"pw59ginefg","title":"Passing Shots - Cloud City"},
+  {"num":37,"id":"0ju23dxmf1","title":"Passing Shots - The Parachute"},
+  {"num":38,"id":"s4fxzharor","title":"Plays (Serve & Volley) - The O.G. (Deuce)"},
+  {"num":39,"id":"8c91vdq18c","title":"Plays (Serve & Volley) - The O.G. (Ad)"},
+  {"num":40,"id":"p8q9ibdjla","title":"Plays (Serve & Volley) - Splitting The Uprights (Deuce)"},
+  {"num":41,"id":"hfxvpt0gif","title":"Plays (Serve & Volley) - Splitting The Uprights (Ad)"},
+  {"num":42,"id":"2smpypr66w","title":"Plays (Serve & Volley) - Middle Out (Deuce)"},
+  {"num":43,"id":"20xzcnxjpp","title":"Plays (Serve & Volley) - Middle Out (Ad)"},
+  {"num":44,"id":"pgwacuens0","title":"Plays (Serve & Volley) - The Ankle Breaker (Deuce)"},
+  {"num":45,"id":"ss7o2c09jo","title":"Plays (Serve & Volley) - The Ankle Breaker (Ad)"},
+  {"num":46,"id":"a9bkrmgxmn","title":"Plays (Serve & Volley) - The Prague-nosticator (Deuce)"},
+  {"num":47,"id":"lr6814drcr","title":"Plays (Serve & Volley) - The Prague-nosticator (Ad)"},
+  {"num":48,"id":"0ckaeb3jye","title":"Plays (Serve & Volley) - The Full Poach (Deuce)"},
+  {"num":49,"id":"dd5kd32wjc","title":"Plays (Serve & Volley) - The Full Poach (Ad)"},
+  {"num":50,"id":"cedx100efh","title":"Plays (Serve Delayed Approach) - Main Street (Deuce)"},
+  {"num":51,"id":"q5k4ahskta","title":"Plays (Serve Delayed Approach) - Main Street (Ad)"},
+  {"num":52,"id":"o66vi5qsbt","title":"Plays (Serve Delayed Approach) - The Side Fence (Deuce)"},
+  {"num":53,"id":"o6gecjplos","title":"Plays (Serve Delayed Approach) - The Side Fence (Ad)"},
+  {"num":54,"id":"b7hc0bm2ia","title":"Plays (Serve Delayed Approach) - Ankle Sprain (Deuce)"},
+  {"num":55,"id":"vxxt02hcfh","title":"Plays (Serve Delayed Approach) - Ankle Sprain (Ad)"},
+  {"num":56,"id":"4vyjbxftes","title":"Plays (Serve Delayed Approach) - Coast-To-Coast (Deuce)"},
+  {"num":57,"id":"7m1fbrisfi","title":"Plays (Serve Delayed Approach) - Coast-To-Coast (Ad)"},
+  {"num":58,"id":"ud1sq4knw2","title":"Plays (Serve Delayed Approach) - Czechmate (Deuce)"},
+  {"num":59,"id":"qlf9owc7s0","title":"Plays (Serve Delayed Approach) - Czechmate (Ad)"},
+  {"num":60,"id":"4uf00lxkom","title":"Plays (Serve Delayed Approach) - The Newt (Deuce)"},
+  {"num":61,"id":"m98ly01vk4","title":"Plays (Serve Delayed Approach) - The Newt (Ad)"},
+  {"num":62,"id":"4o3t441pmp","title":"Plays (Serve Delayed Approach) - 1-2 Punch (Deuce-only)"},
+  {"num":63,"id":"b5wlabl3r6","title":"Plays (Serve Delayed Approach) - Aussie (Deuce-only)"},
+  {"num":64,"id":"a09qe2k5g7","title":"Plays (Serve Delayed Approach) - The Parachute (Deuce-only)"},
+  {"num":65,"id":"a5wwjdmx3o","title":"Plays (Serve Stay Back) - Patience Is A Virtue (Deuce-only)"},
+  {"num":66,"id":"efd21paosj","title":"Plays (Serve Stay Back) - The Upgrade (Ad-only)"},
+  {"num":67,"id":"w5fyyy4hun","title":"Plays (Serve Stay Back) - Nowhere To Hide (Deuce)"},
+  {"num":68,"id":"tvukly4ncs","title":"Plays (Serve Stay Back) - Nowhere To Hide (Ad)"},
+  {"num":69,"id":"910v5aqdgr","title":"Plays (Serve Stay Back) - I-Formation (Deuce)"},
+  {"num":70,"id":"uuxm3dhvu7","title":"Plays (Serve Stay Back) - I-Formation (Ad)"},
+  {"num":71,"id":"fm78m0mruc","title":"Plays (Serve Stay Back) - Stay Back Aussie (Ad-only)"},
+  {"num":72,"id":"i9ziaam23f","title":"Plays (Return) - The Big Dipper (Deuce)"},
+  {"num":73,"id":"idirknl2jt","title":"Plays (Return) - The Big Dipper (Ad)"},
+  {"num":74,"id":"6xmkdb2ywi","title":"Plays (Return) - The Hulk Smash (Deuce)"},
+  {"num":75,"id":"zvvu9kubt2","title":"Plays (Return) - The Hulk Smash (Ad)"},
+  {"num":76,"id":"i4ykkmkksf","title":"Plays (Return) - Chip & Charge (Deuce)"},
+  {"num":77,"id":"amplf7jcwb","title":"Plays (Return) - Chip & Charge  (Ad)"},
+  {"num":78,"id":"cngxmsgq2s","title":"Plays (Return) - Rip Rip Charge (Deuce)"},
+  {"num":79,"id":"wnde1dhzv7","title":"Plays (Return) - Rip Rip Charge (Ad)"},
+  {"num":80,"id":"vai7a7ik7t","title":"Plays (Return) - The Parachute Return (Deuce)"},
+  {"num":81,"id":"o5xzc9mq09","title":"Plays (Return) - The Parachute Return (Ad)"},
+  {"num":82,"id":"lugmsqgsax","title":"Plays (Return) - The Lob (Ad-only)"},
+  {"num":83,"id":"prrtzwmuo7","title":"Plays (Return) - Defending Against The Re-Lob Deuce Court"},
+  {"num":84,"id":"fnt26f58d1","title":"Plays (Return) - Defending Against The Re-Lob Ad Court"}
+];
+
+const BASE = "https://www.fuzzyyellowballs.com/dp/?vdo=";
+const IMG_BASE = "https://www.fuzzyyellowballs.com/dp/images/";
+
+const list   = document.getElementById('list');
+const img    = document.getElementById('preview');
+const imgMsg = document.getElementById('imgStatus');
+const status = document.getElementById('status');
+const iframe = document.getElementById('player');
+const openBtn= document.getElementById('openNew');
+const prevBtn= document.getElementById('prevBtn');
+const nextBtn= document.getElementById('nextBtn');
+
+let activeId = null;
+// this will mirror whatever is currently rendered in the left pane (after filtering)
+let visibleItems = ITEMS.slice();
+
+function render(items) {
+  list.innerHTML = "";
+  items.forEach((it) => {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.href = "#"+it.id;
+    a.textContent = it.title || it.id;
+    a.className = "item";
+    a.onclick = (e) => { e.preventDefault(); select(it.id); };
+    li.appendChild(a);
+    list.appendChild(li);
+  });
+  updateNavButtons(); // refresh disabled state after re-render
+}
+
+function markActive(scrollIntoView=false) {
+  document.querySelectorAll('a.item').forEach(a => a.classList.remove('active'));
+  const cur = document.querySelector(`a.item[href="#${activeId}"]`);
+  if (cur) {
+    cur.classList.add('active');
+    if (scrollIntoView) cur.scrollIntoView({block:'nearest'});
+  }
+}
+
+function setPreviewFromWeb(id) {
+  img.style.display = 'none';
+  imgMsg.textContent = "Loading preview…";
+  const exts = ["png","webp","jpg"];
+  let i = 0;
+  function tryNext() {
+    if (i >= exts.length) { imgMsg.textContent = "Preview not available."; return; }
+    const url = `${IMG_BASE}${id}.${exts[i++]}`;
+    const test = new Image();
+    test.onload = () => { img.src = url; img.style.display = 'block'; imgMsg.textContent = ""; };
+    test.onerror = tryNext;
+    test.src = url;
+  }
+  tryNext();
+}
+
+function select(id, {scroll=false} = {}) {
+  if (!id) return;
+  activeId = id;
+  markActive(scroll);
+  setPreviewFromWeb(id);
+  const url = BASE + id;
+  // set iframe + external button
+  iframe.src = url;
+  status.textContent = "Attempting to load FYB page… If it stays blank, click 'Open on FYB'.";
+  openBtn.onclick = () => window.open(url, '_blank', 'noopener');
+  history.replaceState(null, '', '#'+id);
+  updateNavButtons();
+}
+
+function getVisibleIndex() {
+  return visibleItems.findIndex(it => it.id === activeId);
+}
+
+function updateNavButtons() {
+  const idx = getVisibleIndex();
+  const len = visibleItems.length;
+  prevBtn.disabled = (idx <= 0);
+  nextBtn.disabled = (idx < 0 || idx >= len - 1);
+}
+
+function navigate(delta) {
+  const idx = getVisibleIndex();
+  if (idx < 0) return;
+  const nextIdx = idx + delta;
+  if (nextIdx < 0 || nextIdx >= visibleItems.length) return;
+  const nextId = visibleItems[nextIdx].id;
+  select(nextId, {scroll:true});
+}
+
+prevBtn.addEventListener('click', () => navigate(-1));
+nextBtn.addEventListener('click', () => navigate( 1));
+
+function filterList(q) {
+  q = (q || '').toLowerCase().trim();
+  visibleItems = !q ? ITEMS.slice() :
+    ITEMS.filter(it =>
+      (it.title && it.title.toLowerCase().includes(q)) ||
+      it.id.toLowerCase().includes(q)
+    );
+  render(visibleItems);
+
+  // if current activeId not in visible set, select the first visible item
+  if (!visibleItems.some(it => it.id === activeId)) {
+    const first = visibleItems[0]?.id;
+    if (first) select(first);
+  } else {
+    updateNavButtons();
+  }
+}
+
+function boot() {
+  if (!ITEMS.length) {
+    status.textContent = "No items found.";
+    return;
+  }
+  visibleItems = ITEMS.slice();
+  render(visibleItems);
+  const initial = location.hash ? location.hash.slice(1) : visibleItems[0]?.id;
+  if (initial) select(initial);
+}
+
+window.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>
