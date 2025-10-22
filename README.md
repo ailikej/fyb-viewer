@@ -10,7 +10,6 @@ A web-based viewer for Fuzzy Yellow Balls (FYB) doubles tennis lesson videos. Th
 - ▶️ **Embedded Player** - Watch lessons directly in the interface
 - ⌨️ **Keyboard Navigation** - Use arrow keys to navigate between lessons
 - 💾 **Auto-save Progress** - Automatically remembers your last viewed lesson
-- 📊 **View Counter** - Tracks total page views
 
 ## Lesson Categories
 
