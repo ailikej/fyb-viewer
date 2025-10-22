@@ -96,24 +96,18 @@ function filterList(q) {
 }
 
 function updateViewCount() {
-  const endpoint = "https://api.countapi.xyz/hit/fyb-viewer/total";
-
   const el = document.getElementById("viewCounter");
   el.textContent = "Loading views…";
 
-  fetch(endpoint, { mode: "cors", cache: "no-store" })
-    .then((r) => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json();
-    })
-    .then(({ value }) => {
-      el.innerHTML = `Total views: <strong>${Number(
-        value
-      ).toLocaleString()}</strong>`;
+  // New working public counter API
+  fetch("https://countapi.dev/track/fyb-viewer/site", { cache: "no-store" })
+    .then((r) => r.json())
+    .then((data) => {
+      el.innerHTML = `Total views: <strong>${data.value.toLocaleString()}</strong>`;
     })
     .catch((err) => {
-      console.error("CountAPI failed:", err);
-      el.textContent = "Total views: (unavailable right now)";
+      console.error("View counter failed:", err);
+      el.textContent = "Total views: (unavailable)";
     });
 }
 
