@@ -1,6 +1,10 @@
 * { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
-
+    body {
+      margin: 0;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background: #111;   /* dark background */
+      color: #eee;        /* light text */
+    }
     /* 3-column grid: 1 : 1 : 2 */
     .layout {
       position: relative;               /* so the bottom bar can be absolutely placed inside */
@@ -14,24 +18,32 @@
     .pane-right  { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
 
     h1 { font-size: 18px; margin: 8px 0 12px; }
-    .search { width: 100%; padding: 8px 10px; margin-bottom: 8px; }
+    .search {
+      width: 100%;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      background: #222;     /* dark input background */
+      border: 1px solid #444;
+      color: #eee;
+    }
     ol { list-style: decimal; padding-left: 20px; margin: 0; }
     li { margin: 6px 0; }
     a.item { text-decoration: none; color: #0366d6; }
-    a.item.active { font-weight: 700; }
-    .meta { color: #666; font-size: 12px; }
+    a.item.active {
+    color: #fff;
+}
+    .meta { color: #aaa; font-size: 12px; }
 
     .preview-img {
       max-width: 100%;
       max-height: calc(100vh - 60px);
       display: block;
-      border: 1px solid #eee;
-      border-radius: 6px;
+      background: #fff;
     }
 
     .controls { display:flex; gap:8px; align-items:center; padding: 8px 12px; border-bottom: 1px solid #eee; }
     iframe { flex: 1 1 auto; width: 100%; border: 0; }
-    .warn { color: #a15; font-size: 12px; }
+    .warn { color: #ff7b9b; font-size: 12px; }
 
     /* Bottom nav bar that overlaps the center + right columns */
     .bottom-bar {
@@ -46,7 +58,7 @@
       justify-content: center;
       align-items: center;
       gap: 12px;
-      background: rgba(255,255,255,0.92);
+      background: rgba(0,0,0,0.85);
       border-top: 1px solid #eee;
       backdrop-filter: blur(4px);
       z-index: 10;          /* sit above the iframe/image */
@@ -55,8 +67,9 @@
     .bottom-bar .spacer { flex: 1 1 auto; }
     .bottom-bar button {
       appearance: none;
-      border: 1px solid #ddd;
-      background: #f7f7f7;
+      border: 1px solid #444;  /* darker border */
+      background: #333;        /* dark button */
+      color: #eee;             /* light text so it’s readable */
       padding: 18px 22px;
       border-radius: 8px;
       cursor: pointer;
@@ -75,3 +88,7 @@
 @media (max-width: 900px) {
   .bottom-bar .hint { display: none; } /* keep bar uncluttered on small screens */
 }
+
+/* .pane-center {
+  background: #fff;   
+} */
