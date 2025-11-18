@@ -1,6 +1,7 @@
 // js/app.js
 import { ITEMS } from "./items.js";
-import { BASE, loadPreviewImage, setIframe } from "./utils.js";
+import { ITEMS_SINGLES } from "./items_singles.js";
+import { loadPreviewImage, setIframe, getBase } from "./utils.js";
 
 const list = document.getElementById("list");
 const img = document.getElementById("preview");
@@ -12,8 +13,32 @@ const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const searchEl = document.querySelector(".search");
 
+const headingEl = document.getElementById("lessonHeading");
+const modeToggleBtn = document.getElementById("modeToggle");
+
+// App supports two modes: doubles & singles
+const MODES = {
+  doubles: {
+    key: "doubles",
+    heading: "FYB Doubles Lessons",
+    items: ITEMS,
+    storageKey: "fyb-active-id-doubles",
+  },
+  singles: {
+    key: "singles",
+    heading: "FYB Singles Lessons",
+    items: ITEMS_SINGLES,
+    storageKey: "fyb-active-id-singles",
+  },
+};
+
+let currentMode = "doubles";
 let activeId = null;
-let visibleItems = ITEMS.slice();
+let visibleItems = [];
+
+function getAllItemsForCurrentMode() {
+  return MODES[currentMode].items;
+}
 
 function render(items) {
   list.innerHTML = "";
@@ -48,13 +73,22 @@ function select(id, { scroll = false } = {}) {
   if (!id) return;
   activeId = id;
   markActive(scroll);
-  loadPreviewImage(img, imgMsg, id);
-  setIframe(iframe, id);
+
+  // Use mode-aware helpers
+  loadPreviewImage(img, imgMsg, id, currentMode);
+  setIframe(iframe, id, currentMode);
+
   status.textContent =
     "Attempting to load FYB page… If it stays blank, click 'Open on FYB'.";
-  openBtn.onclick = () => window.open(`${BASE}${id}`, "_blank", "noopener");
+
+  openBtn.onclick = () =>
+    window.open(`${getBase(currentMode)}${id}`, "_blank", "noopener");
+
   history.replaceState(null, "", "#" + id);
-  localStorage.setItem("fyb-active-id", id);
+
+  // Save last active id per mode
+  localStorage.setItem(MODES[currentMode].storageKey, id);
+
   updateNavButtons();
 }
 
@@ -79,14 +113,18 @@ function navigate(delta) {
 
 function filterList(q) {
   q = (q || "").toLowerCase().trim();
+  const allItems = getAllItemsForCurrentMode();
+
   visibleItems = !q
-    ? ITEMS.slice()
-    : ITEMS.filter(
+    ? allItems.slice()
+    : allItems.filter(
         (it) =>
           (it.title && it.title.toLowerCase().includes(q)) ||
           it.id.toLowerCase().includes(q)
       );
+
   render(visibleItems);
+
   if (!visibleItems.some((it) => it.id === activeId)) {
     const first = visibleItems[0]?.id;
     if (first) select(first);
@@ -95,19 +133,75 @@ function filterList(q) {
   }
 }
 
+function switchMode(mode, { initialId } = {}) {
+  if (!MODES[mode]) mode = "doubles";
+  if (currentMode === mode && !initialId) return;
+
+  currentMode = mode;
+  localStorage.setItem("fyb-mode", mode);
+
+  const cfg = MODES[mode];
+
+  // Update heading and toggle label
+  headingEl.textContent = cfg.heading;
+  if (mode === "doubles") {
+    modeToggleBtn.textContent = "Singles";
+    modeToggleBtn.setAttribute("aria-label", "Switch to singles lessons");
+  } else {
+    modeToggleBtn.textContent = "Doubles";
+    modeToggleBtn.setAttribute("aria-label", "Switch to doubles lessons");
+  }
+
+  // Reset list for this mode
+  const allItems = cfg.items;
+  visibleItems = allItems.slice();
+  render(visibleItems);
+
+  // Choose which ID to show first:
+  // 1) hash (if it exists in this mode)
+  // 2) saved last ID for this mode
+  // 3) first item
+  const saved = localStorage.getItem(cfg.storageKey);
+  const hasInitialInMode =
+    initialId && allItems.some((it) => it.id === initialId);
+
+  const startId = (hasInitialInMode && initialId) || saved || allItems[0]?.id;
+
+  if (startId) {
+    select(startId);
+  }
+}
+
 function boot() {
-  if (!ITEMS.length) {
+  // If absolutely no items at all
+  if (!MODES.doubles.items.length && !MODES.singles.items.length) {
     status.textContent = "No items found.";
     return;
   }
-  visibleItems = ITEMS.slice();
-  render(visibleItems);
-  const saved = localStorage.getItem("fyb-active-id");
-  const initial = location.hash
-    ? location.hash.slice(1)
-    : saved || visibleItems[0]?.id;
-  if (initial) select(initial);
+
+  const hashId = location.hash ? location.hash.slice(1) : null;
+  const storedMode = localStorage.getItem("fyb-mode");
+
+  // Decide initial mode:
+  // 1) If hash matches one of the lists, use that mode
+  // 2) Else fall back to stored mode
+  // 3) Else default to doubles
+  let mode = storedMode === "singles" ? "singles" : "doubles";
+  if (hashId) {
+    if (MODES.doubles.items.some((it) => it.id === hashId)) {
+      mode = "doubles";
+    } else if (MODES.singles.items.some((it) => it.id === hashId)) {
+      mode = "singles";
+    }
+  }
+
+  switchMode(mode, { initialId: hashId });
 }
+
+modeToggleBtn.addEventListener("click", () => {
+  const newMode = currentMode === "doubles" ? "singles" : "doubles";
+  switchMode(newMode);
+});
 
 prevBtn.addEventListener("click", () => navigate(-1));
 nextBtn.addEventListener("click", () => navigate(1));

@@ -89,6 +89,15 @@
   .bottom-bar .hint { display: none; } /* keep bar uncluttered on small screens */
 }
 
-/* .pane-center {
-  background: #fff;   
-} */
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mode-toggle:hover {
+  border-color: #aaa;
+}
+
+
+

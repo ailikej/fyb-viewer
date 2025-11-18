@@ -13,11 +13,22 @@
 </head>
 <body>
   <div class="layout">
-    <aside>
-      <h1>FYB Doubles Lessons</h1>
-      <input class="search" placeholder="Search titles / IDs…" />
-      <ol id="list"></ol>
-    </aside>
+  <aside>
+    <div class="header-row">
+      <h1 id="lessonHeading">FYB Doubles Lessons</h1>
+      <button
+        id="modeToggle"
+        class="mode-toggle"
+        type="button"
+        aria-label="Switch to singles lessons"
+      >
+        Singles
+      </button>
+    </div>
+    <input class="search" placeholder="Search titles / IDs…" />
+    <ol id="list"></ol>
+  </aside>
+
 
     <section class="pane-center">
       <img id="preview" class="preview-img" alt="Preview" style="display:none;" />
